@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ankitkumar95993/My_Blog.git"
+    "url": "git+https://github.com/PSGg19/Blog_app.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Ankitkumar95993/My_Blog/issues"
+    "url": "https://github.com/PSGg19/Blog_app.git"
   },
-  "homepage": "https://github.com/Ankitkumar95993/My_Blog#readme",
+  "homepage": "https://github.com/PSGg19/Blog_app.git#readme",
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",

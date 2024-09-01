@@ -2,12 +2,19 @@ import React from "react";
 
 export default function About() {
   return (
+
     <div className="bg-gray-100 min-h-screen p-8">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full md:w-3/4 lg:w-2/3 mx-auto animate-fade-in">
+      <h1>About This App</h1>
+    <p>This is a MERN-based blogging app created for demo purposes.</p>
+    <p>Made with ❤️ by Open Source Community.</p>
+  </div>
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">About Prahlad's Blog</h1>
         <p className="text-center text-xl font-semibold text-gray-700 mb-10">
           Prahlad's Blog is more than just a collection of words on a screen; it's a reflection of my journey, a canvas where I paint the colors of my thoughts, experiences, and musings. Here, you'll find a diverse array of topics ranging from academic insights and problem-solving strategies to personal anecdotes and reflections on the world around us. I believe in the power of sharing ideas, in the magic of storytelling, and in the transformative potential of connection. Through Prahlad's Blog, I aspire to create a space where minds meet, where perspectives collide, and where conversations spark inspiration and growth. Whether you're a fellow traveler on the road of life or a curious soul seeking inspiration, I invite you to join me on this journey. Together, let's embark on a quest for knowledge, creativity, and understanding. Let's explore the depths of our curiosity, embrace the beauty of our differences, and celebrate the richness of our shared humanity.
         </p>
+        <div>
+    
 
         <div className="space-y-8">
           <div className="flex flex-col md:flex-row items-center">

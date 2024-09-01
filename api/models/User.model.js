@@ -28,7 +28,17 @@ const userSchema = new mongoose.Schema({
     }
 
 
-    },{timestamps:true},
+    },{timestamps:true}
+    
+    ,bio: {
+        type: String,
+        default: ""
+      },
+      location: {
+        type: String,
+        default: ""
+      },
+      
 )
 
 const User = mongoose.model('User',userSchema);

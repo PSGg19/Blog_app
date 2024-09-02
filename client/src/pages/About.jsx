@@ -5,9 +5,6 @@ export default function About() {
 
     <div className="bg-gray-100 min-h-screen p-8">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full md:w-3/4 lg:w-2/3 mx-auto animate-fade-in">
-      <h1>About This App</h1>
-    <p>This is a MERN-based blogging app created for demo purposes.</p>
-    <p>Made with ❤️ by Open Source Community.</p>
   </div>
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">About Prahlad's Blog</h1>
         <p className="text-center text-xl font-semibold text-gray-700 mb-10">

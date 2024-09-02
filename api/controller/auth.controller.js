@@ -92,6 +92,18 @@ exports.googleAuth = async(req,res,next)=>{
 
   }
 }
+export const getPaginatedPosts = async (req, res, next) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const skip = (page - 1) * limit;
+  try {
+    const posts = await Post.find().skip(skip).limit(limit).sort({ createdAt: -1 });
+    res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 
 

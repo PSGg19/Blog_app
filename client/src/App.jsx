@@ -43,4 +43,9 @@ export default function App() {
     </BrowserRouter>
     
   )
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser) dispatch({ type: "LOGIN_SUCCESS", payload: storedUser });
+  }, []);
+  
 }

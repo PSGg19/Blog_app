@@ -135,12 +135,40 @@ exports.getUser = async (req, res, next) => {
     next(error);
   }
 };
+import mongoose from "mongoose"; // for ObjectId check if not already imported
+
 export const getUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
-    if (!user) return res.status(404).json("User not found");
-    res.status(200).json(user);
+    const userId = req.params.id;
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: "Invalid User ID format" });
+    }
+
+    // Fetch user excluding sensitive fields
+    const user = await User.findById(userId).select("-password -__v");
+
+    if (!user) {
+      console.warn(`User with ID ${userId} not found`);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Log access
+    console.log(`User profile fetched for ID: ${userId}`);
+
+    // Send response
+    return res.status(200).json({
+      message: "User profile fetched successfully",
+      user,
+    });
+
   } catch (err) {
-    next(err);
+    console.error("Error fetching user profile:", err.message);
+    next({
+      status: 500,
+      message: "Internal Server Error while fetching user profile",
+    });
   }
 };
+

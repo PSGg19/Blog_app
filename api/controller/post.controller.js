@@ -90,26 +90,56 @@ exports.deletePosts = async (req, res, next) => {
 };
 
 exports.updatePost = async (req, res, next) => {
-  if (!req.user.isAdmin || req.user.id !== req.params.userId) {
-    return next(errorHandler(403, "you are not allowed to delete this post"));
-  }
   try {
+    const postId = req.params.postId;
+    const userId = req.params.userId;
+
+    // Find the post first
+    const post = await Post.findById(postId);
+    if (!post) {
+      return next(errorHandler(404, "Post not found"));
+    }
+
+    // Authorization check
+    if (req.user.id !== userId && !req.user.isAdmin) {
+      return next(errorHandler(403, "You are not authorized to update this post"));
+    }
+
+    // Construct dynamic update object
+    const fieldsToUpdate = {};
+    const allowedFields = ["title", "content", "category", "image"];
+
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined && req.body[field] !== "") {
+        fieldsToUpdate[field] = req.body[field];
+      }
+    });
+
+    if (Object.keys(fieldsToUpdate).length === 0) {
+      return next(errorHandler(400, "No valid fields provided to update"));
+    }
+
+    // Perform update
     const updatedPost = await Post.findByIdAndUpdate(
-      req.params.postId,
-      {
-        $set: {
-          title: req.body.title,
-          content: req.body.content,
-          category: req.body.category,
-          image: req.body.image,
-        },
-      },
-      { new: true }
+      postId,
+      { $set: fieldsToUpdate },
+      { new: true, runValidators: true }
     );
 
-    res.status(200).json(updatedPost);
+    if (!updatedPost) {
+      return next(errorHandler(500, "Post update failed"));
+    }
+
+    // Optional logging
+    console.log(`Post ${postId} updated by user ${req.user.id}`);
+
+    return res.status(200).json({
+      message: "Post updated successfully",
+      updatedPost,
+    });
+
   } catch (error) {
-    next(error);
+    console.error("Error in updatePost:", error.message);
+    next(errorHandler(500, "Internal Server Error"));
   }
 };
-

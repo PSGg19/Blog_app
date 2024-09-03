@@ -60,50 +60,78 @@ exports.getPostComments=async(req,res,next)=>{
 
 exports.likeComment = async (req, res, next) => {
   try {
-    const comment = await Comment.findById(req.params.commentId);
-    if (!comment) {
-      return nexr(errorHandler(404, "comment not found"));
+    const commentId = req.params.commentId;
+    if (!commentId) {
+      return next(errorHandler(400, "Comment ID is required"));
     }
-    const userIndex = comment.likes.indexOf(req.user.id);
-    if (userIndex === -1) {
-      comment.numberOfLikes+=1;
-      comment.likes.push(req.user.id);
 
-    } else {
-      comment.numberOfLikes-=1;
-      comment.likes.splice(userIndex,1);
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return next(errorHandler(404, "Comment not found"));
     }
-    await comment.save();
-    res.status(200).json(comment);
+
+    if (!comment.likes) {
+      comment.likes = [];
+    }
+
+    if (typeof comment.numberOfLikes !== "number") {
+      comment.numberOfLikes = 0;
+    }
+
+    const userId = req.user.id;
+    const userIndex = comment.likes.indexOf(userId);
+
+    if (userIndex === -1) {
+      comment.likes.push(userId);
+      comment.numberOfLikes += 1;
+    } else {
+      comment.likes.splice(userIndex, 1);
+      comment.numberOfLikes = Math.max(comment.numberOfLikes - 1, 0);
+    }
+
+    const updatedComment = await comment.save();
+
+    res.status(200).json({
+      message: userIndex === -1 ? "Comment liked" : "Comment unliked",
+      comment: updatedComment,
+    });
   } catch (error) {
-    next(error);
+    next(errorHandler(500, "Error while liking/unliking comment"));
   }
 };
 
 
-exports.editComment = async(req,res,next)=>{
- 
-  try{
-    const  comment = await Comment.findByIdAndUpdate(req.params.commentId);
-    if(!comment){
-      return next(errorHandler(404,'comment not found'));
+exports.editComment = async (req, res, next) => {
+  try {
+    const commentId = req.params.commentId;
+    const content = req.body.content?.trim();
+
+    if (!commentId || !content) {
+      return next(errorHandler(400, "Comment ID and new content are required"));
     }
-    if(comment.userId !== req.user.id && !req.user.isAdmin)
-    {
-      console.log(comment.userId,req.user.id,req.user.isAdmin);
-      return next(errorHandler(403,'you are not allowed to edit this comment'));
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return next(errorHandler(404, "Comment not found"));
     }
-    const editedComment = await Comment.findByIdAndUpdate(
-      req.params.commentId,{
-        content:req.body.content,
-      },
-      {new:true},
-    );
-    res.status(200).json(editedComment);
-  }catch(error){
-    next(error);
+
+    if (comment.userId !== req.user.id && !req.user.isAdmin) {
+      return next(errorHandler(403, "You are not allowed to edit this comment"));
+    }
+
+    comment.content = content;
+    comment.editedAt = new Date();
+
+    const updatedComment = await comment.save();
+
+    res.status(200).json({
+      message: "Comment updated successfully",
+      comment: updatedComment,
+    });
+  } catch (error) {
+    next(errorHandler(500, "Error while editing comment"));
   }
-}
+};
 
 exports.deleteComment = async(req,res,next)=>{
   try{

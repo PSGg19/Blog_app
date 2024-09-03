@@ -5,29 +5,45 @@ const Comment = require("../models/Comment.model");
 
 exports.createComment = async (req, res, next) => {
   try {
-      const { content, postId, userId } = req.body;
-    
+    const { content, postId, userId } = req.body;
 
-    if (!content || !postId || !userId) {
-        return next(errorHandler(400, "Content, postId, and userId are required"));
-      }
-      
-    if (userId !== req.user.id) {
-      return next(errorHandler(403, "you are not allowed to create this comment"));
+    if (!content?.trim() || !postId || !userId) {
+      return next(errorHandler(400, "Content, postId, and userId are required"));
     }
 
+    if (userId !== req.user.id && !req.user.isAdmin) {
+      return next(errorHandler(403, "You are not allowed to create this comment"));
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return next(errorHandler(404, "Post not found for commenting"));
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(errorHandler(404, "User not found"));
+    }
 
     const newComment = new Comment({
-      content,
+      content: content.trim(),
       postId,
       userId,
+      createdAt: new Date(),
     });
-    await newComment.save();
-    res.status(200).json(newComment);
+
+    const savedComment = await newComment.save();
+
+    res.status(201).json({
+      message: "Comment created successfully",
+      comment: savedComment,
+    });
+
   } catch (error) {
-    next(error);
+    next(errorHandler(500, "Failed to create comment"));
   }
 };
+
 
 exports.getPostComments=async(req,res,next)=>{
   try{

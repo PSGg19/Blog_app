@@ -36,18 +36,28 @@ exports.getPosts = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 9;
     const sortDirection = req.query.order === "asc" ? 1 : -1;
 
-    const posts = await Post.find({
-      ...(req.query.userId && { userId: req.query.userId }),
-      ...(req.query.category && { category: req.query.category }),
-      ...(req.query.slug && { slug: req.query.slug }),
-      ...(req.query.postId && { _id: req.query.postId }),
-      ...(req.query.searchTerm && {
-        $or: [
-          { title: { $regex: req.query.searchTerm, $options: "i" } },
-          { content: { $regex: req.query.searchTerm, $options: "i" } },
-        ],
-      }),
-    })
+    let queryConditions = {};
+
+    if (req.query.userId) {
+      queryConditions.userId = req.query.userId;
+    }
+    if (req.query.category) {
+      queryConditions.category = req.query.category;
+    }
+    if (req.query.slug) {
+      queryConditions.slug = req.query.slug;
+    }
+    if (req.query.postId) {
+      queryConditions._id = req.query.postId;
+    }
+    if (req.query.searchTerm) {
+      queryConditions.$or = [
+        { title: { $regex: req.query.searchTerm, $options: "i" } },
+        { content: { $regex: req.query.searchTerm, $options: "i" } },
+      ];
+    }
+
+    const posts = await Post.find(queryConditions)
       .sort({ updatedAt: sortDirection })
       .skip(startIndex)
       .limit(limit);
@@ -55,12 +65,7 @@ exports.getPosts = async (req, res, next) => {
     const totalPost = await Post.countDocuments();
 
     const now = new Date();
-
-    const oneMonthAgo = new Date(
-      now.getFullYear(),
-      now.getMonth() - 1,
-      now.getDate()
-    );
+    const oneMonthAgo = new Date(now.setMonth(now.getMonth() - 1));
 
     const lastMonthPosts = await Post.countDocuments({
       createdAt: { $gte: oneMonthAgo },
@@ -75,6 +80,7 @@ exports.getPosts = async (req, res, next) => {
     next(error);
   }
 };
+
 
 exports.deletePosts = async (req, res, next) => {
   if (!req.user.isAdmin || req.user.id !== req.params.userId) {

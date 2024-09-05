@@ -3,36 +3,65 @@ const bcrypt = require('bcrypt');
 const {errorHandler}  = require('../utils/error.js');
 const jwt = require('jsonwebtoken');
 
-exports.signup = async (req,res,next) => {
-  // console.log(req.body);
+exports.signup = async (req, res, next) => {
   const { username, email, password } = req.body;
 
+  // Check if all required fields are provided
   if (
     !username ||
     !email ||
     !password ||
-    username === "" ||
-    email === "" ||
-    password === ""
+    username.trim() === "" ||
+    email.trim() === "" ||
+    password.trim() === ""
   ) {
-    next(errorHandler(400,'please fill all the fields'));
+    // If any field is missing, return an error
+    return next(errorHandler(400, 'Please fill all the fields.'));
   }
-  
-  const hashedPassword =  bcrypt.hashSync(password,10);
 
-  const newUser = new User({ 
-    username, 
-    email, 
-    password : hashedPassword,
-  });
+  // Validate that the username contains only letters, numbers, and underscores
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    return next(errorHandler(400, 'Username can only contain letters, numbers, and underscores.'));
+  }
+
+  // Validate email format using regular expression
+  if (!/\S+@\S+\.\S+/.test(email)) {
+    return next(errorHandler(400, 'Please provide a valid email address.'));
+  }
+
+  // Ensure password is at least 8 characters long
+  if (password.length < 8) {
+    return next(errorHandler(400, 'Password must be at least 8 characters long.'));
+  }
 
   try {
+    // Check if the email is already registered
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      // If the email is already in use, return an error
+      return next(errorHandler(400, 'Email is already registered.'));
+    }
+
+    // Hash the password before saving it to the database
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    // Create a new user with the provided details
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+    });
+
+    // Save the new user to the database
     await newUser.save();
-    res.json({
-      message: "signup successful",
+
+    // Send a successful response after the user is created
+    res.status(201).json({
+      message: "Signup successful, welcome to the platform!",
     });
   } catch (error) {
-   next(error);
+    // Handle any errors that occur during the process
+    next(error);
   }
 };
 

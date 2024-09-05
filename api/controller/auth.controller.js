@@ -65,31 +65,45 @@ exports.signup = async (req, res, next) => {
   }
 };
 
-exports.signin=async(req,res,next)=>{
+exports.signin = async (req, res, next) => {
+  const { email, password } = req.body;
 
-  const{email,password} = req.body;
-  if(!email || !password || email===''|| password==='') {
-    return next(errorHandler(400,'please fill all the fields'));
+  // Check if email and password are provided
+  if (!email || !password || email === '' || password === '') {
+    return next(errorHandler(400, 'Please fill all the fields.'));
   }
-  try{
-    const validUser = await User.findOne({email});
-    if(!validUser){
-      return next(errorHandler(404,' User not found'));
+
+  try {
+    // Find the user with the given email
+    const validUser = await User.findOne({ email });
+    if (!validUser) {
+      return next(errorHandler(404, 'User not found.'));
     }
 
-    const validPassword = bcrypt.compareSync(password,validUser.password);
-    if(!validPassword){
-      return next(errorHandler(400,'Invalid Password'));
+    // Compare the provided password with the stored hashed password
+    const validPassword = bcrypt.compareSync(password, validUser.password);
+    if (!validPassword) {
+      return next(errorHandler(400, 'Invalid password.'));
     }
-    const token =jwt.sign( {id:validUser._id,isAdmin:validUser.isAdmin},process.env.JWT_SECRET,);
-    const {password:pass,...rest} = validUser._doc;
-    res.status(200).cookie('access_token',token,{httpOnly:true}).json(rest);
 
-  }catch(error){
+    // Generate a JWT token with user id and admin status
+    const token = jwt.sign(
+      { id: validUser._id, isAdmin: validUser.isAdmin },
+      process.env.JWT_SECRET
+    );
+
+    // Exclude the password from the response
+    const { password: pass, ...rest } = validUser._doc;
+
+    // Send the token in the cookie and user details in the response
+    res.status(200).cookie('access_token', token, { httpOnly: true }).json(rest);
+
+  } catch (error) {
+    // Handle any errors during the process
     next(error);
   }
+};
 
-}
 
 exports.googleAuth = async(req,res,next)=>{
   const {name,email,googlePhotoUrl} = req.body;

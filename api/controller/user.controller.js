@@ -61,16 +61,29 @@ exports.updateUser = async (req, res, next) => {
 
 
 exports.deleteUser = async (req, res, next) => {
+  // Check if the user is not an admin and does not match the ID of the user to be deleted
+  // If both conditions are true, return a 403 error as they are not allowed to delete the user
   if (!req.user.isAdmin && req.user.id !== req.params.userId) {
-    return errorHandler(next(403, "you are not allowed to delete this user"));
+    return next(errorHandler(403, "You are not allowed to delete this user"));
   }
+
   try {
-    await User.findByIdAndDelete(req.params.userId);
+    // Attempt to find and delete the user by their ID
+    const userToDelete = await User.findByIdAndDelete(req.params.userId);
+
+    // If no user is found, send a 404 error (optional)
+    if (!userToDelete) {
+      return next(errorHandler(404, "User not found"));
+    }
+
+    // Respond with a success message once the user is deleted
     res.status(200).json("User has been deleted");
   } catch (error) {
+    // Catch any errors and pass them to the error handler
     next(error);
   }
 };
+
 
 exports.signout = (req, res, next) => {
   try {

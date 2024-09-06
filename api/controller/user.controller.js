@@ -74,14 +74,18 @@ exports.deleteUser = async (req, res, next) => {
 
 exports.signout = (req, res, next) => {
   try {
+    // Clear the 'access_token' cookie, effectively signing the user out
     res
-      .clearCookie("access_token")
-      .status(200)
-      .json("User has been signed out");
+      .clearCookie("access_token") // Remove the access token cookie
+      .status(200) // Send a 200 OK status code
+      .json("User has been signed out"); // Respond with a success message
+    
   } catch (error) {
+    // Catch any errors that occur and pass them to the next error handler
     next(error);
   }
 };
+
 
 exports.getUsers = async (req, res, next) => {
   if (!req.user.isAdmin) {

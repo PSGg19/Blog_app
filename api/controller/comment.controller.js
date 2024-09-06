@@ -133,25 +133,33 @@ exports.editComment = async (req, res, next) => {
   }
 };
 
-exports.deleteComment = async(req,res,next)=>{
-  try{
+exports.deleteComment = async (req, res, next) => {
+  try {
+    // Find the comment by its ID from the database
     const comment = await Comment.findById(req.params.commentId);
-    if(!comment){
+
+    // If the comment does not exist, return a 404 error
+    if (!comment) {
       return next(errorHandler(404, 'No comment with that Id exists'));
     }
 
-    if(comment.userId !== req.user.id && !req.user.isAdmin){
-      return next(errorHandler(403,'you are not allowed to delete this comment'))
+    // Check if the user is either the owner of the comment or an admin
+    // If the user is not the comment's owner or an admin, return a 403 error
+    if (comment.userId !== req.user.id && !req.user.isAdmin) {
+      return next(errorHandler(403, 'You are not allowed to delete this comment'));
     }
 
+    // If the user has the right permissions, delete the comment
     await Comment.findByIdAndDelete(req.params.commentId);
-    res.status(200).json('comment has been deleted');
 
-  }catch(error){
+    // Send a success message with status 200 after deleting the comment
+    res.status(200).json('Comment has been deleted');
+    
+  } catch (error) {
+    // Catch any errors and pass them to the next error handler
     next(error);
   }
-
-}
+};
 
 exports.getComments=async(req,res,next)=>{
  

@@ -44,19 +44,14 @@ exports.createComment = async (req, res, next) => {
   }
 };
 
-
-exports.getPostComments=async(req,res,next)=>{
-  try{
-    const comments = await Comment.find({postId:req.params.postId}).sort({createdAt:-1,
-    });
-     res.status(200).json(comments);
-  }catch(error){
-    next(error);
-
+exports.getPostComments = async (req, res, next) => {
+  try {
+    const comments = await Comment.find({ postId: req.params.postId }).sort({ createdAt: -1 });
+    res.status(200).json(comments);
+  } catch (error) {
+    next(errorHandler(500, "Failed to retrieve comments"));
   }
-
-
-}
+};
 
 exports.likeComment = async (req, res, next) => {
   try {
@@ -100,7 +95,6 @@ exports.likeComment = async (req, res, next) => {
   }
 };
 
-
 exports.editComment = async (req, res, next) => {
   try {
     const commentId = req.params.commentId;
@@ -135,54 +129,52 @@ exports.editComment = async (req, res, next) => {
 
 exports.deleteComment = async (req, res, next) => {
   try {
-    // Find the comment by its ID from the database
     const comment = await Comment.findById(req.params.commentId);
 
-    // If the comment does not exist, return a 404 error
     if (!comment) {
       return next(errorHandler(404, 'No comment with that Id exists'));
     }
 
-    // Check if the user is either the owner of the comment or an admin
-    // If the user is not the comment's owner or an admin, return a 403 error
     if (comment.userId !== req.user.id && !req.user.isAdmin) {
       return next(errorHandler(403, 'You are not allowed to delete this comment'));
     }
 
-    // If the user has the right permissions, delete the comment
     await Comment.findByIdAndDelete(req.params.commentId);
 
-    // Send a success message with status 200 after deleting the comment
     res.status(200).json('Comment has been deleted');
     
   } catch (error) {
-    // Catch any errors and pass them to the next error handler
-    next(error);
+    next(errorHandler(500, 'Error deleting comment'));
   }
 };
 
-exports.getComments=async(req,res,next)=>{
- 
-    if(!req.user.isAdmin){
-      return next(errorHandler(403,'you are not allowed to get all comments'))
-    }
-    try{
-     const startIndex = parseInt(req.query.startIndex) || 0;
-     const limit = req.query.limit || 9;
-     const sortDirection = req.query.sort === 'desc' ? -1 : 1;
-     const comments = await  Comment.find()
-     .sort({createdAt:sortDirection})
-     .skip(startIndex)
-     .limit(limit);
-     const totalComments = await Comment.countDocuments();
-     const now = new Date();
-     const oneMonthAgo = new Date(now.getFullYear(),now.getMonth()-1,now.getDate());
-     const lastMonthComments = await Comment.countDocuments({createdAt:{ $gte:oneMonthAgo}});
-     res.status(200).json({comments,totalComments,lastMonthComments});
-  }catch(error){
-
-
+exports.getComments = async (req, res, next) => {
+  if (!req.user.isAdmin) {
+    return next(errorHandler(403, 'You are not allowed to get all comments'));
   }
+  try {
+    const startIndex = parseInt(req.query.startIndex) || 0;
+    const limit = parseInt(req.query.limit) || 9;
+    const sortDirection = req.query.sort === 'desc' ? -1 : 1;
 
+    const comments = await Comment.find()
+      .sort({ createdAt: sortDirection })
+      .skip(startIndex)
+      .limit(limit);
 
-}
+    const totalComments = await Comment.countDocuments();
+
+    const now = new Date();
+    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+
+    const lastMonthComments = await Comment.countDocuments({ createdAt: { $gte: oneMonthAgo } });
+
+    res.status(200).json({
+      comments,
+      totalComments,
+      lastMonthComments,
+    });
+  } catch (error) {
+    next(errorHandler(500, 'Failed to retrieve comments'));
+  }
+};

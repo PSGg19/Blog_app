@@ -2,13 +2,19 @@ const { errorHandler } = require("../utils/error");
 const User = require("../models/User.model");
 const bcrypt = require("bcrypt");
 
-exports.updateUser = async (req, res, next) => {
+import bcrypt from 'bcryptjs';  // Ensure bcrypt is imported
+import { errorHandler } from '../utils/error';  // Ensure errorHandler is imported
+
+export const updateUser = async (req, res, next) => {
+  // Check if the user is authorized to update (admin or the user themselves)
   if (req.user.id !== req.params.userId && !req.user.isAdmin) {
     return next(errorHandler(403, "You are not allowed to update this user"));
   }
 
+  // Extract values from the request body
   const { password, username, email, profilePicture } = req.body;
 
+  // If password is provided, validate and hash it
   if (password) {
     if (password.length < 6) {
       return next(errorHandler(400, "Password must be at least 6 characters long"));
@@ -16,13 +22,16 @@ exports.updateUser = async (req, res, next) => {
     req.body.password = bcrypt.hashSync(password, 10);
   }
 
+  // Validate username if provided
   if (username) {
+    // Check username length and spaces
     if (username.length < 7 || username.length > 20) {
       return next(errorHandler(400, "Username must be between 7 and 20 characters"));
     }
     if (/\s/.test(username)) {
       return next(errorHandler(400, "Username cannot contain spaces"));
     }
+    // Ensure username is lowercase and contains only alphanumeric characters
     if (username !== username.toLowerCase()) {
       return next(errorHandler(400, "Username must be in lowercase"));
     }
@@ -32,30 +41,36 @@ exports.updateUser = async (req, res, next) => {
   }
 
   try {
+    // Perform the update operation
     const updatedUser = await User.findByIdAndUpdate(
       req.params.userId,
       {
         $set: {
-          username,
-          email,
-          profilePicture,
-          password: req.body.password,
+          username: username || undefined,  // If not provided, don't update
+          email: email || undefined,
+          profilePicture: profilePicture || undefined,
+          password: req.body.password || undefined, // Only set password if it's hashed
         },
       },
       { new: true }
     );
 
+    // If no user found, return error
     if (!updatedUser) {
       return next(errorHandler(404, "User not found"));
     }
 
+    // Exclude the password field from the response
     const { password: pwd, ...rest } = updatedUser._doc;
-    res.status(200).json({
+
+    // Return the updated user data
+    return res.status(200).json({
       message: "User updated successfully",
       user: rest,
     });
   } catch (error) {
-    next(errorHandler(500, "Failed to update user"));
+    // Catch and handle any errors during the update operation
+    return next(errorHandler(500, "Failed to update user"));
   }
 };
 
@@ -100,40 +115,38 @@ exports.signout = (req, res, next) => {
 };
 
 
-exports.getUsers = async (req, res, next) => {
+export const getUsers = async (req, res, next) => {
+  // Check if the user is an admin
   if (!req.user.isAdmin) {
-    return next(errorHandler(403, "you are not allowed to see all users"));
+    return next(errorHandler(403, "You are not allowed to see all users"));
   }
 
   try {
-    const startIndex = parseInt(req.query.startIndex) || 0;
-    const limit = parseInt(req.query.limti) || 9;
-    // const sortBy = req.query.sortBy ? req.query.sortBy : "_id";
-    const sortDirection = req.query.sort === "asc" ? 1 : -1;
+    const startIndex = parseInt(req.query.startIndex) || 0;  // Default to 0 if not provided
+    const limit = parseInt(req.query.limit) || 9;           // Corrected the typo 'limti' to 'limit'
+    const sortDirection = req.query.sort === "asc" ? 1 : -1; // Ascending or descending order
 
+    // Fetch users with pagination and sorting
     const users = await User.find()
       .sort({ createdAt: sortDirection })
       .skip(startIndex)
       .limit(limit);
 
+    // Remove password field from the response
     const userWithoutPassword = users.map((user) => {
       const { password, ...rest } = user._doc;
       return rest;
     });
 
+    // Get total number of users
     const totalUsers = await User.countDocuments();
 
-    const now = new Date();
-    const oneMonthAgo = new Date(
-      now.getFullYear(),
-      now.getMonth() - 1,
-      now.getDate()
-    );
-
+    // Get the number of users created in the past month
     const oneMonthUsers = await User.countDocuments({
-      createdAt: { $gte: oneMonthAgo },
+      createdAt: { $gte: new Date(new Date() - 30 * 24 * 60 * 60 * 1000) }, // Calculates 30 days ago
     });
 
+    // Send response with the requested data
     res.status(200).json({
       users: userWithoutPassword,
       totalUsers,

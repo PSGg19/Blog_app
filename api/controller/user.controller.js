@@ -144,41 +144,52 @@ exports.getUsers = async (req, res, next) => {
   }
 };
 
-exports.getUser = async (req, res, next) => {
+import { errorHandler } from '../utils/error'; // Ensure errorHandler is imported
+
+export const getUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.userId);
+    
+    // If user is not found, return an appropriate error
     if (!user) {
-      next(errorHandler(404, "user not found"));
+      return next(errorHandler(404, "User not found"));
     }
+
+    // Destructure to exclude sensitive data (password)
     const { password, ...rest } = user._doc;
-    res.status(200).json(rest);
+    
+    // Return the user data (without the password field)
+    return res.status(200).json(rest);
   } catch (error) {
     next(error);
   }
 };
-import mongoose from "mongoose"; // for ObjectId check if not already imported
+
+import mongoose from 'mongoose'; // for ObjectId check if not already imported
+import { errorHandler } from '../utils/error'; // Ensure errorHandler is imported
 
 export const getUserProfile = async (req, res, next) => {
-  try {
-    const userId = req.params.id;
+  const userId = req.params.id;
 
+  try {
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ error: "Invalid User ID format" });
     }
 
-    // Fetch user excluding sensitive fields
+    // Fetch user excluding sensitive fields (like password and __v)
     const user = await User.findById(userId).select("-password -__v");
 
+    // If user is not found, return 404
     if (!user) {
       console.warn(`User with ID ${userId} not found`);
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Log access
+    // Log access for debugging purposes
     console.log(`User profile fetched for ID: ${userId}`);
 
-    // Send response
+    // Send response with user profile
     return res.status(200).json({
       message: "User profile fetched successfully",
       user,
@@ -186,10 +197,6 @@ export const getUserProfile = async (req, res, next) => {
 
   } catch (err) {
     console.error("Error fetching user profile:", err.message);
-    next({
-      status: 500,
-      message: "Internal Server Error while fetching user profile",
-    });
+    return next(errorHandler(500, "Internal Server Error while fetching user profile"));
   }
 };
-

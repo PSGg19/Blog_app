@@ -107,7 +107,8 @@ exports.updatePost = async (req, res, next) => {
     }
 
     // Authorization check
-    if (req.user.id !== userId && !req.user.isAdmin) {
+    const isAuthorized = req.user.id === userId || req.user.isAdmin;
+    if (!isAuthorized) {
       return next(errorHandler(403, "You are not authorized to update this post"));
     }
 
@@ -146,6 +147,6 @@ exports.updatePost = async (req, res, next) => {
 
   } catch (error) {
     console.error("Error in updatePost:", error.message);
-    next(errorHandler(500, "Internal Server Error"));
+    return next(errorHandler(500, "Internal Server Error"));
   }
 };

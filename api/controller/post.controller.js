@@ -2,31 +2,38 @@ const { errorHandler } = require("../utils/error");
 const Post = require("../models/post.model");
 
 exports.create = async (req, res, next) => {
+  // Check if user is admin
   if (!req.user.isAdmin) {
-    return next(errorHandler(403, "you are not allowed to create the post"));
+    return next(errorHandler(403, "You are not allowed to create the post"));
   }
 
+  // Check if title and content are provided
   if (!req.body.title || !req.body.content) {
-    return next(errorHandler(400, "please provide all required fields"));
+    return next(errorHandler(400, "Please provide both title and content"));
   }
 
+  // Slug generation: convert spaces to hyphens and remove non-alphanumeric characters
   const slug = req.body.title
     .split(" ")
     .join("-")
     .toLowerCase()
-    .replace(/[^a-zA-Z0-9]/, "");
+    .replace(/[^a-z0-9-]/g, ""); // Improved regex to replace non-alphanumeric characters
 
+  // Create new post object
   const newPost = new Post({
     ...req.body,
     slug,
-    userId: req.user.id,
+    userId: req.user.id, // Attach the user ID of the creator
   });
 
   try {
+    // Save the post to the database
     const savedPost = await newPost.save();
-    res.status(201).json(savedPost);
+    res.status(201).json(savedPost); // Return the saved post as response
   } catch (error) {
-    next(error);
+    // Catch any errors and send a server error response
+    console.error("Error creating post:", error.message);
+    next(errorHandler(500, "Failed to create the post"));
   }
 };
 

@@ -1,37 +1,28 @@
-const { errorHandler } = require("../utils/error");
-const Post = require("../models/post.model");
-
 exports.create = async (req, res, next) => {
-  // Check if user is admin
   if (!req.user.isAdmin) {
     return next(errorHandler(403, "You are not allowed to create the post"));
   }
 
-  // Check if title and content are provided
   if (!req.body.title || !req.body.content) {
     return next(errorHandler(400, "Please provide both title and content"));
   }
 
-  // Slug generation: convert spaces to hyphens and remove non-alphanumeric characters
   const slug = req.body.title
     .split(" ")
     .join("-")
     .toLowerCase()
-    .replace(/[^a-z0-9-]/g, ""); // Improved regex to replace non-alphanumeric characters
+    .replace(/[^a-z0-9-]/g, "");
 
-  // Create new post object
   const newPost = new Post({
     ...req.body,
     slug,
-    userId: req.user.id, // Attach the user ID of the creator
+    userId: req.user.id,
   });
 
   try {
-    // Save the post to the database
     const savedPost = await newPost.save();
-    res.status(201).json(savedPost); // Return the saved post as response
+    res.status(201).json(savedPost);
   } catch (error) {
-    // Catch any errors and send a server error response
     console.error("Error creating post:", error.message);
     next(errorHandler(500, "Failed to create the post"));
   }
@@ -69,7 +60,7 @@ exports.getPosts = async (req, res, next) => {
       .skip(startIndex)
       .limit(limit);
 
-    const totalPost = await Post.countDocuments();
+    const totalPost = await Post.countDocuments(queryConditions); // Count with query conditions
 
     const now = new Date();
     const oneMonthAgo = new Date(now.setMonth(now.getMonth() - 1));
@@ -88,22 +79,18 @@ exports.getPosts = async (req, res, next) => {
   }
 };
 
-
 exports.deletePosts = async (req, res, next) => {
   try {
-    // Authorization check: User must be admin or the owner of the post
     const isAuthorized = req.user.isAdmin || req.user.id === req.params.userId;
     if (!isAuthorized) {
       return next(errorHandler(403, "You are not allowed to delete this post"));
     }
 
-    // Find and delete the post by its ID
     const post = await Post.findByIdAndDelete(req.params.postId);
     if (!post) {
       return next(errorHandler(404, "Post not found"));
     }
 
-    // Optional logging for post deletion
     console.log(`Post ${req.params.postId} deleted by user ${req.user.id}`);
 
     return res.status(200).json("The post has been deleted");
@@ -113,25 +100,21 @@ exports.deletePosts = async (req, res, next) => {
   }
 };
 
-
 exports.updatePost = async (req, res, next) => {
   try {
     const postId = req.params.postId;
     const userId = req.params.userId;
 
-    // Find the post first
     const post = await Post.findById(postId);
     if (!post) {
       return next(errorHandler(404, "Post not found"));
     }
 
-    // Authorization check
     const isAuthorized = req.user.id === userId || req.user.isAdmin;
     if (!isAuthorized) {
       return next(errorHandler(403, "You are not authorized to update this post"));
     }
 
-    // Construct dynamic update object
     const fieldsToUpdate = {};
     const allowedFields = ["title", "content", "category", "image"];
 
@@ -145,7 +128,14 @@ exports.updatePost = async (req, res, next) => {
       return next(errorHandler(400, "No valid fields provided to update"));
     }
 
-    // Perform update
+    if (req.body.title) {
+      fieldsToUpdate.slug = req.body.title
+        .split(" ")
+        .join("-")
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, "");
+    }
+
     const updatedPost = await Post.findByIdAndUpdate(
       postId,
       { $set: fieldsToUpdate },
@@ -156,14 +146,12 @@ exports.updatePost = async (req, res, next) => {
       return next(errorHandler(500, "Post update failed"));
     }
 
-    // Optional logging
     console.log(`Post ${postId} updated by user ${req.user.id}`);
 
     return res.status(200).json({
       message: "Post updated successfully",
       updatedPost,
     });
-
   } catch (error) {
     console.error("Error in updatePost:", error.message);
     return next(errorHandler(500, "Internal Server Error"));

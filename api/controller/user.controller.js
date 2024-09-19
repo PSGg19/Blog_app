@@ -115,38 +115,40 @@ exports.signout = (req, res, next) => {
 };
 
 
-export const getUsers = async (req, res, next) => {
-  // Check if the user is an admin
+exports.getUsers = async (req, res, next) => {
   if (!req.user.isAdmin) {
-    return next(errorHandler(403, "You are not allowed to see all users"));
+    return next(errorHandler(403, "you are not allowed to see all users"));
   }
 
   try {
-    const startIndex = parseInt(req.query.startIndex) || 0;  // Default to 0 if not provided
-    const limit = parseInt(req.query.limit) || 9;           // Corrected the typo 'limti' to 'limit'
-    const sortDirection = req.query.sort === "asc" ? 1 : -1; // Ascending or descending order
+    const startIndex = parseInt(req.query.startIndex) || 0;
+    const limit = parseInt(req.query.limti) || 9;
+    // const sortBy = req.query.sortBy ? req.query.sortBy : "_id";
+    const sortDirection = req.query.sort === "asc" ? 1 : -1;
 
-    // Fetch users with pagination and sorting
     const users = await User.find()
       .sort({ createdAt: sortDirection })
       .skip(startIndex)
       .limit(limit);
 
-    // Remove password field from the response
     const userWithoutPassword = users.map((user) => {
       const { password, ...rest } = user._doc;
       return rest;
     });
 
-    // Get total number of users
     const totalUsers = await User.countDocuments();
 
-    // Get the number of users created in the past month
+    const now = new Date();
+    const oneMonthAgo = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      now.getDate()
+    );
+
     const oneMonthUsers = await User.countDocuments({
-      createdAt: { $gte: new Date(new Date() - 30 * 24 * 60 * 60 * 1000) }, // Calculates 30 days ago
+      createdAt: { $gte: oneMonthAgo },
     });
 
-    // Send response with the requested data
     res.status(200).json({
       users: userWithoutPassword,
       totalUsers,

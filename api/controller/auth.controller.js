@@ -1,21 +1,13 @@
 const User = require("../models/User.model");
 const bcrypt = require('bcrypt');
-const {errorHandler}  = require('../utils/error.js');
+const { errorHandler } = require('../utils/error.js');
 const jwt = require('jsonwebtoken');
 
 exports.signup = async (req, res, next) => {
   const { username, email, password } = req.body;
 
   // Check if all required fields are provided
-  if (
-    !username ||
-    !email ||
-    !password ||
-    username.trim() === "" ||
-    email.trim() === "" ||
-    password.trim() === ""
-  ) {
-    // If any field is missing, return an error
+  if (!username?.trim() || !email?.trim() || !password?.trim()) {
     return next(errorHandler(400, 'Please fill all the fields.'));
   }
 
@@ -38,12 +30,11 @@ exports.signup = async (req, res, next) => {
     // Check if the email is already registered
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      // If the email is already in use, return an error
       return next(errorHandler(400, 'Email is already registered.'));
     }
 
     // Hash the password before saving it to the database
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10); // Using async hash
 
     // Create a new user with the provided details
     const newUser = new User({
@@ -60,7 +51,6 @@ exports.signup = async (req, res, next) => {
       message: "Signup successful, welcome to the platform!",
     });
   } catch (error) {
-    // Handle any errors that occur during the process
     next(error);
   }
 };
@@ -69,7 +59,7 @@ exports.signin = async (req, res, next) => {
   const { email, password } = req.body;
 
   // Check if email and password are provided
-  if (!email || !password || email === '' || password === '') {
+  if (!email?.trim() || !password?.trim()) {
     return next(errorHandler(400, 'Please fill all the fields.'));
   }
 
@@ -81,7 +71,7 @@ exports.signin = async (req, res, next) => {
     }
 
     // Compare the provided password with the stored hashed password
-    const validPassword = bcrypt.compareSync(password, validUser.password);
+    const validPassword = await bcrypt.compare(password, validUser.password); // Using async compare
     if (!validPassword) {
       return next(errorHandler(400, 'Invalid password.'));
     }
@@ -99,11 +89,9 @@ exports.signin = async (req, res, next) => {
     res.status(200).cookie('access_token', token, { httpOnly: true }).json(rest);
 
   } catch (error) {
-    // Handle any errors during the process
     next(error);
   }
 };
-
 
 exports.googleAuth = async (req, res, next) => {
   const { name, email, googlePhotoUrl } = req.body;
@@ -126,17 +114,14 @@ exports.googleAuth = async (req, res, next) => {
       res.status(200).cookie('access_token', token, { httpOnly: true }).json(rest);
     } else {
       // If the user doesn't exist, create a new user
-      // Generate a random password to save for new user (not to be used for login)
-      const generatedPassword =
-        Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
-      // Hash the generated password
-      const hashedPassword = bcrypt.hashSync(generatedPassword, 10);
+      const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+      const hashedPassword = await bcrypt.hash(generatedPassword, 10); // Use async hash
 
       // Create a new user with Google account details
       const newUser = await User.create({
         username: name.toLowerCase().split(' ').join('') + Math.random().toString(9).slice(-3), // Generate a unique username
         email,
-        password: hashedPassword, // Save the hashed password
+        password: hashedPassword, // Save the hashed password (won't be used for login)
         profilePicture: googlePhotoUrl, // Save Google profile picture URL
       });
 
@@ -156,13 +141,6 @@ exports.googleAuth = async (req, res, next) => {
       res.status(200).cookie('access_token', token, { httpOnly: true }).json(rest);
     }
   } catch (error) {
-    // Catch any errors and pass them to the next error handler
     next(error);
   }
 };
-
-
-
-
-
-

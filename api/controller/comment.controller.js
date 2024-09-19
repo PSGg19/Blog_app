@@ -1,35 +1,30 @@
 const { errorHandler } = require("../utils/error");
 const Comment = require("../models/Comment.model");
-const Post = require("../models/Post.model");
-const User = require("../models/User.model");
+
+
 
 exports.createComment = async (req, res, next) => {
   try {
     const { content, postId, userId } = req.body;
 
-    // Validate required fields
     if (!content?.trim() || !postId || !userId) {
       return next(errorHandler(400, "Content, postId, and userId are required"));
     }
 
-    // Check if the user is authorized to create the comment
     if (userId !== req.user.id && !req.user.isAdmin) {
       return next(errorHandler(403, "You are not allowed to create this comment"));
     }
 
-    // Check if the post exists
     const post = await Post.findById(postId);
     if (!post) {
       return next(errorHandler(404, "Post not found for commenting"));
     }
 
-    // Check if the user exists
     const user = await User.findById(userId);
     if (!user) {
       return next(errorHandler(404, "User not found"));
     }
 
-    // Create and save the new comment
     const newComment = new Comment({
       content: content.trim(),
       postId,
@@ -43,6 +38,7 @@ exports.createComment = async (req, res, next) => {
       message: "Comment created successfully",
       comment: savedComment,
     });
+
   } catch (error) {
     next(errorHandler(500, "Failed to create comment"));
   }
@@ -69,12 +65,10 @@ exports.likeComment = async (req, res, next) => {
       return next(errorHandler(404, "Comment not found"));
     }
 
-    // Initialize likes array if not already present
     if (!comment.likes) {
       comment.likes = [];
     }
 
-    // Initialize number of likes if not already present
     if (typeof comment.numberOfLikes !== "number") {
       comment.numberOfLikes = 0;
     }
@@ -106,7 +100,6 @@ exports.editComment = async (req, res, next) => {
     const commentId = req.params.commentId;
     const content = req.body.content?.trim();
 
-    // Validate required fields
     if (!commentId || !content) {
       return next(errorHandler(400, "Comment ID and new content are required"));
     }
@@ -116,12 +109,10 @@ exports.editComment = async (req, res, next) => {
       return next(errorHandler(404, "Comment not found"));
     }
 
-    // Authorization check
     if (comment.userId !== req.user.id && !req.user.isAdmin) {
       return next(errorHandler(403, "You are not allowed to edit this comment"));
     }
 
-    // Update the comment content
     comment.content = content;
     comment.editedAt = new Date();
 
@@ -144,7 +135,6 @@ exports.deleteComment = async (req, res, next) => {
       return next(errorHandler(404, 'No comment with that Id exists'));
     }
 
-    // Authorization check
     if (comment.userId !== req.user.id && !req.user.isAdmin) {
       return next(errorHandler(403, 'You are not allowed to delete this comment'));
     }
@@ -152,13 +142,13 @@ exports.deleteComment = async (req, res, next) => {
     await Comment.findByIdAndDelete(req.params.commentId);
 
     res.status(200).json('Comment has been deleted');
+    
   } catch (error) {
     next(errorHandler(500, 'Error deleting comment'));
   }
 };
 
 exports.getComments = async (req, res, next) => {
-  // Admin-only access
   if (!req.user.isAdmin) {
     return next(errorHandler(403, 'You are not allowed to get all comments'));
   }

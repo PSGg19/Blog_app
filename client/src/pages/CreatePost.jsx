@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { TextInput, Select, FileInput, Button, Alert } from "flowbite-react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { app } from "../firebase";
+import { useState } from "react";
 import {
   getDownloadURL,
   getStorage,
@@ -18,15 +19,14 @@ export default function CreatePost() {
   const [imageUploadProgress, setImageUploadProgress] = useState(null);
   const [imageUploadError, setImageUploadError] = useState(null);
   const [formData, setFormData] = useState({});
-  const [publishError, setPublishError] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Track submission state
-  const [publishSuccess, setPublishSuccess] = useState(null); // Track success state
+  const [publishError,setPublishError] = useState(null);
   const navigate = useNavigate();
+
 
   const handleUploadImage = async () => {
     try {
       if (!file) {
-        setImageUploadError("Please select an image");
+        setImageUploadError("please select an image");
         return;
       }
       setImageUploadError(null);
@@ -49,7 +49,7 @@ export default function CreatePost() {
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
             setImageUploadProgress(null);
             setImageUploadError(null);
-            setFormData({ ...formData, image: downloadURL });
+            setFormData({...formData,image:downloadURL });
           });
         }
       );
@@ -62,11 +62,6 @@ export default function CreatePost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.content) {
-      setPublishError("Title and Content are required");
-      return;
-    }
-    setIsSubmitting(true);
     try {
       const res = await fetch("/api/post/create", {
         method: "POST",
@@ -79,18 +74,13 @@ export default function CreatePost() {
       const data = await res.json();
       if (!res.ok) {
         setPublishError(data.message);
-        setIsSubmitting(false);
         return;
-      }
-      if (res.ok) {
-        setPublishSuccess("Post successfully published!");
+      } if(res.ok) {
         setPublishError(null);
-        setIsSubmitting(false);
         navigate(`/post/${data.slug}`);
       }
     } catch (error) {
-      setPublishError("Something went wrong");
-      setIsSubmitting(false);
+      setPublishError("something went wrong");
     }
   };
 
@@ -106,13 +96,13 @@ export default function CreatePost() {
             id="title"
             className="flex-1"
             onChange={(e) => {
-              setFormData({ ...formData, title: e.target.value });
+              setFormData({ ...formData, title:e.target.value});
             }}
           />
           <Select
-            onChange={(e) => {
-              setFormData({ ...formData, category: e.target.value });
-            }}
+            onChange={(e) =>{
+              setFormData({...formData,category:e.target.value })}
+            }
           >
             <option value="uncategorized">Select a category </option>
             <option value="javascript">Javascript</option>
@@ -123,8 +113,10 @@ export default function CreatePost() {
             <option value="devops">Devops</option>
           </Select>
         </div>
-
-        <div className="flex gap-4 items-center justify-between border-4 border-teal-500 border-dotted p-3">
+        <div
+          className="flex gap-4 items-center justify-between border-4
+         border-teal-500 border-dotted p-3"
+        >
           <FileInput
             type="file"
             accept="image/*"
@@ -141,7 +133,7 @@ export default function CreatePost() {
             disabled={imageUploadProgress}
           >
             {imageUploadProgress ? (
-              <div className="w-16 h-16">
+              <div className="w-16 h-16 ">
                 <CircularProgressbar
                   value={imageUploadProgress}
                   text={`${imageUploadProgress || 0}%`}
@@ -152,23 +144,27 @@ export default function CreatePost() {
             )}
           </Button>
         </div>
-        {imageUploadError && <Alert color="red">{imageUploadError}</Alert>}
-        {formData.image && (
-          <img src={formData.image} alt="upload" className="w-72 h-72" />
+        {imageUploadError && (
+          <div>
+            <Alert color="red">{imageUploadError}</Alert>
+          </div>
         )}
-
+        {formData.image && (
+          <img src={formData.image} alt="upload" className="w-72 h-72 " />
+        )}
         <ReactQuill
           theme="snow"
           placeholder="Write Something..."
           className="h-72 mb-12"
           required
-          onChange={(value) => setFormData({ ...formData, content: value })}
+          onChange={(value) => 
+            setFormData({...formData,content:value})
+          }
         />
-        <Button gradientDuoTone="purpleToPink" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Publishing..." : "Publish"}
+        <Button gradientDuoTone="purpleToPink" type="submit">
+          Publish
         </Button>
-        {publishError && <Alert color="failure" className="mt-5">{publishError}</Alert>}
-        {publishSuccess && <Alert color="success" className="mt-5">{publishSuccess}</Alert>}
+        {publishError && <Alert color='failure'className="mt-5" >{publishError}</Alert>}
       </form>
     </div>
   );

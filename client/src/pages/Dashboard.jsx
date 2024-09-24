@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, Link } from "react-router-dom";
 import DashboardComp from "../components/DashboardComp";
 import DashComments from "../components/DashComments";
@@ -9,15 +9,26 @@ import DashUsers from "../components/DashUsers";
 
 export default function Dashboard() {
   const location = useLocation();
-  const [tab, setTab] = useState('dashboard'); // Default tab set to 'dashboard'
+  
+  // Get the 'tab' parameter from URL search params
+  const tabFromUrl = useMemo(() => {
+    const urlParams = new URLSearchParams(location.search);
+    return urlParams.get("tab") || 'dashboard'; // Default to 'dashboard' if no tab is specified
+  }, [location.search]);
+
+  const [tab, setTab] = useState(tabFromUrl);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const tabFromUrl = urlParams.get("tab");
-    if (tabFromUrl) {
-      setTab(tabFromUrl);
-    }
-  }, [location.search]);
+    setTab(tabFromUrl);
+  }, [tabFromUrl]);
+
+  const tabLinks = [
+    { name: "Dashboard", value: "dashboard" },
+    { name: "Profile", value: "profile" },
+    { name: "Posts", value: "posts" },
+    { name: "Users", value: "users" },
+    { name: "Comments", value: "comments" },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
@@ -28,36 +39,16 @@ export default function Dashboard() {
       <div className="flex-1 p-6">
         {/* Tab Navigation */}
         <div className="flex space-x-4 mb-6">
-          <Link
-            to="?tab=dashboard"
-            className={`text-lg font-semibold ${tab === 'dashboard' ? 'text-teal-500' : 'text-gray-500'}`}
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="?tab=profile"
-            className={`text-lg font-semibold ${tab === 'profile' ? 'text-teal-500' : 'text-gray-500'}`}
-          >
-            Profile
-          </Link>
-          <Link
-            to="?tab=posts"
-            className={`text-lg font-semibold ${tab === 'posts' ? 'text-teal-500' : 'text-gray-500'}`}
-          >
-            Posts
-          </Link>
-          <Link
-            to="?tab=users"
-            className={`text-lg font-semibold ${tab === 'users' ? 'text-teal-500' : 'text-gray-500'}`}
-          >
-            Users
-          </Link>
-          <Link
-            to="?tab=comments"
-            className={`text-lg font-semibold ${tab === 'comments' ? 'text-teal-500' : 'text-gray-500'}`}
-          >
-            Comments
-          </Link>
+          {tabLinks.map(({ name, value }) => (
+            <Link
+              key={value}
+              to={`?tab=${value}`}
+              className={`text-lg font-semibold ${tab === value ? 'text-teal-500' : 'text-gray-500'}`}
+              aria-selected={tab === value ? "true" : "false"}
+            >
+              {name}
+            </Link>
+          ))}
         </div>
 
         {/* Render components based on selected tab */}

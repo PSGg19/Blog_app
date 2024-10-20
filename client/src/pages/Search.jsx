@@ -1,6 +1,6 @@
 import { Button, Select, TextInput } from "flowbite-react";
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import PostCard from "../components/PostCard";
 
 export default function Search() {
@@ -21,14 +21,13 @@ export default function Search() {
     const searchTermFromUrl = urlParams.get("searchTerm");
     const sortFromUrl = urlParams.get("sort");
     const categoryFromUrl = urlParams.get("category");
-
     if (searchTermFromUrl || sortFromUrl || categoryFromUrl) {
-      setSidebarData((prev) => ({
-        ...prev,
-        searchTerm: searchTermFromUrl || "",
-        sort: sortFromUrl || "desc",
-        category: categoryFromUrl || "none",
-      }));
+      setSidebarData({
+        ...sidebarData,
+        searchTerm: searchTermFromUrl,
+        sort: sortFromUrl,
+        category: categoryFromUrl,
+      });
     }
 
     const fetchPosts = async () => {
@@ -39,55 +38,66 @@ export default function Search() {
         setLoading(false);
         return;
       }
-
-      const data = await res.json();
-      setPosts(data.posts);
-      setLoading(false);
-      setShowMore(data.posts.length === 9);
+      if (res.ok) {
+        const data = await res.json();
+        setPosts(data.posts);
+        setLoading(false);
+        if (data.posts.length === 9) {
+          setShowMore(true);
+        } else {
+          setShowMore(false);
+        }
+      }
     };
-
     fetchPosts();
   }, [location.search]);
 
   const handleChange = (e) => {
-    const { id, value } = e.target;
-    setSidebarData((prev) => ({
-      ...prev,
-      [id]: value,
-    }));
+    if (e.target.id === "searchTerm") {
+      const searchTerm = e.target.value;
+      setSidebarData({ ...sidebarData, searchTerm });
+    }
+
+    if (e.target.id === "sort") {
+      const order = e.target.value || "desc";
+      setSidebarData({ ...sidebarData, sort: order });
+    }
+
+    if (e.target.id === "category") {
+      const category = e.target.value || "uncategorized";
+      setSidebarData({ ...sidebarData, category });
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const urlParams = new URLSearchParams();
+    const urlParams = new URLSearchParams(location.search);
     urlParams.set("searchTerm", sidebarData.searchTerm);
     urlParams.set("sort", sidebarData.sort);
     urlParams.set("category", sidebarData.category);
-    navigate(`/search/?${urlParams.toString()}`);
+    const searchQuery = urlParams.toString();
+    navigate(`/search/?${searchQuery}`);
   };
-
   const handleShowMore = async () => {
     const numberOfPosts = posts.length;
     const startIndex = numberOfPosts;
     const urlParams = new URLSearchParams(location.search);
     urlParams.set("startIndex", startIndex);
     const searchQuery = urlParams.toString();
-
     const res = await fetch(`/api/post/getposts?${searchQuery}`);
-    if (!res.ok) return;
-
-    const data = await res.json();
-    setPosts((prev) => [...prev, ...data.posts]);
-    setShowMore(data.posts.length === 9);
-  };
-
-  const handleClearFilters = () => {
-    setSidebarData({
-      searchTerm: "",
-      sort: "desc",
-      category: "none",
-    });
-    navigate("/search");
+    if (!res.ok) {
+      return;
+    }
+    if (res.ok) {
+      const data = await res.json();
+      setPosts([...posts, ...data.posts]);
+    }
+    setShowMore(false);
+    // if (posts.length === 9) {
+    //   setShowMore(true);
+    // } else {
+    //   setShowMore(false);
+    // }
   };
 
   return (
@@ -95,7 +105,9 @@ export default function Search() {
       <div className="p-7 border-b md:border-r md:min-h-screen border-gray-500">
         <form className="flex flex-col gap-8" onSubmit={handleSubmit}>
           <div className="flex items-center gap-2">
-            <label className="whitespace-nowrap font-semibold">SearchTerm:</label>
+            <label className="whitespace-nowrap font-semibold">
+              SearchTerm:
+            </label>
             <TextInput
               placeholder="search...."
               id="searchTerm"
@@ -108,7 +120,7 @@ export default function Search() {
           <div className="flex items-center gap-2">
             <label>Sort:</label>
             <Select onChange={handleChange} value={sidebarData.sort} id="sort">
-              <option value="desc">Latest</option>
+              <option value="desc">latest</option>
               <option value="asc">Oldest</option>
             </Select>
           </div>
@@ -121,42 +133,34 @@ export default function Search() {
               id="category"
             >
               <option value="react">React Js</option>
-              <option value="uncategorized">Uncategorized</option>
+              <option value="uncategorized">uncategorized</option>
               <option value="javascript">Javascript</option>
               <option value="webdev">WebDev</option>
               <option value="python">Python</option>
-              <option value="none">None</option>
+              <option value="none">none</option>
             </Select>
           </div>
-
-          <div className="flex gap-4">
-            <Button type="submit" outline gradientDuoTone="purpleToPink">
-              Apply Filters
-            </Button>
-            <Button type="button" color="gray" onClick={handleClearFilters}>
-              Clear Filters
-            </Button>
-          </div>
+          <Button type="submit" outline gradientDuoTone="purpleToPink">
+            Apply Filters
+          </Button>
         </form>
       </div>
-
       <div className="w-full">
         <h1 className="text-3xl font-semibold sm:border-b border-gray-500 p-3 mt-5">
           Posts Results:
         </h1>
         <div className="flex flex-wrap p-3 gap-4 items-center justify-evenly">
-          {!loading && posts.length === 0 && (
-            <p className="text-xl text-gray-500">No Posts Found!</p>
-          )}
+          {!loading && posts.length === 0 && <p cl>No Posts Found!</p>}
           {loading && <p className="text-xl text-gray-500">Loading...</p>}
           {!loading &&
+            posts &&
             posts.length > 0 &&
             posts.map((post) => <PostCard key={post._id} post={post} />)}
         </div>
         {showMore && (
           <button
             onClick={handleShowMore}
-            className="text-teal-500 text-lg hover:underline p-7 w-full"
+            className="text-teal-500 text-lg hover:underline p-7 w-full "
           >
             Show More
           </button>

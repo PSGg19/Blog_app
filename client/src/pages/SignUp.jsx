@@ -1,67 +1,57 @@
-import React, { useState } from "react";
-import { TextInput, Label, Button, Alert, Spinner } from "flowbite-react";
-import { Link, useNavigate } from "react-router-dom";
+import React from "react";
+import { TextInput,Label,Button,Alert,Spinner} from "flowbite-react";
+import {Link,useNavigate} from "react-router-dom";
+import { useState } from "react";
 import Oauth from "../components/Oauth";
 
-export default function SignUp() { 
-  // State to hold form data, loading state, and error messages
-  const [formData, setFormdata] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(null);
-  const navigate = useNavigate();  // Navigate to different routes programmatically
+export default function SignUp(){ 
 
-  // Handle changes in the form fields and update state
-  const handleChange = (e) => {
-    setFormdata({ ...formData, [e.target.id]: e.target.value });
-  };
+  const [formData,setFormdata] = useState({});
+  const [loading,setLoading] = useState(false);
+  const [errorMessage,setErrorMessage] = useState(null);
+  const navigate = useNavigate();
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent the default form submit behavior
-    // Check if all fields are filled
-    if (!formData.username || !formData.email || !formData.password) {
-      return setErrorMessage('Please fill out all the fields');
-    }
-
-    try {
-      // Show loading spinner while waiting for the response
+  const handleChange = (e)=>{
+    setFormdata({...formData,[e.target.id]: e.target.value});
+  }
+  
+  const handleSubmit = async(e)=>{
+    e.preventDefault();
+    if(!formData.username || !formData.email || !formData.password )
+     {
+      return setErrorMessage('please fill out all the fields');
+     }
+    try{
       setLoading(true);
-      
-      // Make a POST request to the API to submit the form data
-      const res = await fetch("/api/auth/signup", {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
+      const res = await fetch("/api/auth/signup",{
+        method:'POST',
+        headers:{
+          "content-Type":"application/json",
         },
-        body: JSON.stringify(formData),
+        body:JSON.stringify(formData),
       });
-      const data = await res.json();  // Parse response data
-
-      // If the signup is unsuccessful, show the error message
-      if (data.success === false) {
-        setErrorMessage(data.message);
-        setLoading(false); // Stop loading state
+      const data = await res.json();
+      console.log(data);
+      if(data.success === false)
+      { setErrorMessage(data.message);
+        setLoading(false);
         return;
       }
-
-      // On successful signup, stop loading, clear error message, and navigate to sign-in page
       setLoading(false);
       setErrorMessage(null);
       navigate('/sign-in');
       
-    } catch (error) {
-      // Handle errors like network issues or other exceptions
-      setLoading(false);
-      setErrorMessage(error.message);
-    }
-  };
-
+  }catch(error){
+   setLoading(false);
+   setErrorMessage(error.message);
+  }
+};
   return (
     <div className="min-h-screen mt-20">
       <div className="flex p-3 max-w-3xl mx-auto flex-col md:flex-row gap-10">
-        {/* Left Section - Branding and Description */}
+        {/* left div */}
         <div className="w-full flex-col justify-center mt-[100px]">
-          <Link to="/" className="font-bold dark:text-white text-4xl">
+          <Link to="/" className="font-bold dark:text-white text-4xl" >
             <span className="px-2 py-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-lg text-white">
               Ankit's
             </span>
@@ -70,53 +60,48 @@ export default function SignUp() {
           <p className="text-sm mt-5">This is a demo project. You can sign up with your email and password or with Google.</p>
         </div>
 
-        {/* Right Section - Sign Up Form */}
+        {/* rightdiv */}
         <div className="w-full">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-10">
-            {/* Username Field */}
             <div>
-              <Label value="Your username" />
-              <TextInput type="text" placeholder="Username" id="username" onChange={handleChange} />
+            <Label value="your username" />
+            <TextInput  type='text'  placeholder="Username" id="username" onChange={handleChange}/>
             </div>
-
-            {/* Email Field */}
             <div>
-              <Label value="Your email" />
-              <TextInput type="text" placeholder="Email" id="email" onChange={handleChange} />
+            <Label value="your email" />
+            <TextInput  type='text'  placeholder="Email" id="email" onChange={handleChange}/>
             </div>
-
-            {/* Password Field */}
             <div>
-              <Label value="Your password" />
-              <TextInput type="password" placeholder="Password" id="password" onChange={handleChange} />
+            <Label value="your password" />
+            <TextInput  type='password'  placeholder="Password" id="password" onChange={handleChange}/>
             </div>
-
-            {/* Submit Button and OAuth */}
             <div className="flex flex-col gap-3 mt-4">
-              <Button disabled={loading} gradientDuoTone="purpleToPink" type="submit">
-                {loading ? (
-                  <>
-                    <Spinner size="sm" />
-                    <span className="pl-3">Loading...</span>
-                  </>
-                ) : 'Sign Up'}
+            <Button disabled={loading} gradientDuoTone='purpleToPink' type='submit' >
+              {loading ? (
+                <>
+                 <Spinner size="sm"/>
+                <span className="pl-3">Loading...</span>
+                </>
+              ): 'Sign Up'
+              }
               </Button>
-              <Oauth /> {/* OAuth component for social login (e.g., Google) */}
+              <Oauth/>
             </div>
           </form>
-
-          {/* Sign In Link */}
           <div className="flex gap-2 text-sm mt-5">
             <span>Have an account?</span>
             <Link to="/sign-in" className="text-blue-500">Sign In</Link>
           </div>
 
-          {/* Error Alert */}
-          {errorMessage && (
-            <Alert className="mt-5" color="failure">{errorMessage}</Alert>
-          )}
+         {
+          errorMessage && (
+            <Alert className='mt-5' color='failure'>{errorMessage}</Alert>
+          )
+         }
+
         </div>
       </div>
     </div>
   );
-}
+  }
+
